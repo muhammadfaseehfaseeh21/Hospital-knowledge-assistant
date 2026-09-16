@@ -1,4 +1,3 @@
-
 import os
 import tempfile
 
@@ -65,19 +64,14 @@ def extract_pdf_text(uploaded_file):
     Extract text from every page of a PDF.
 
     Returns:
-        list of dictionaries containing:
-        text, page number and file name
+        list of dictionaries containing text, page number, and file name.
     """
-
     documents = []
-
     pdf_bytes = uploaded_file.read()
-
     pdf = fitz.open(stream=pdf_bytes, filetype="pdf")
 
     for page_number, page in enumerate(pdf, start=1):
         text = page.get_text("text").strip()
-
         if text:
             documents.append({
                 "text": text,
@@ -86,7 +80,6 @@ def extract_pdf_text(uploaded_file):
             })
 
     pdf.close()
-
     return documents
 
 
@@ -96,26 +89,19 @@ def extract_pdf_text(uploaded_file):
 
 def create_chunks(documents, chunk_size=1000, overlap=150):
     chunks = []
-
     for document in documents:
         text = document["text"]
-
         start = 0
-
         while start < len(text):
             end = start + chunk_size
-
             chunk_text = text[start:end]
-
             if chunk_text.strip():
                 chunks.append({
                     "text": chunk_text,
                     "page": document["page"],
                     "file_name": document["file_name"]
                 })
-
             start += chunk_size - overlap
-
     return chunks
 
 
@@ -125,18 +111,11 @@ def create_chunks(documents, chunk_size=1000, overlap=150):
 
 def create_faiss_index(chunks):
     texts = [chunk["text"] for chunk in chunks]
-
-    embeddings = embedding_model.encode(
-        texts,
-        convert_to_numpy=True
-    )
-
+    embeddings = embedding_model.encode(texts, convert_to_numpy=True)
     embeddings = embeddings.astype("float32")
 
     dimension = embeddings.shape[1]
-
     index = faiss.IndexFlatL2(dimension)
-
     index.add(embeddings)
 
     return index
@@ -147,21 +126,11 @@ def create_faiss_index(chunks):
 # --------------------------------------------------
 
 def search_documents(question, index, chunks, top_k=5):
-
-    question_embedding = embedding_model.encode(
-        [question],
-        convert_to_numpy=True
-    ).astype("float32")
-
-    distances, indices = index.search(
-        question_embedding,
-        min(top_k, len(chunks))
-    )
+    question_embedding = embedding_model.encode([question], convert_to_numpy=True).astype("float32")
+    distances, indices = index.search(question_embedding, min(top_k, len(chunks)))
 
     results = []
-
     for index_number in indices[0]:
-
         if index_number < len(chunks):
             results.append(chunks[index_number])
 
@@ -173,7 +142,6 @@ def search_documents(question, index, chunks, top_k=5):
 # --------------------------------------------------
 
 def generate_answer(question, context, api_key):
-
     client = Groq(api_key=api_key)
 
     prompt = f"""
@@ -183,7 +151,6 @@ Answer the user's question ONLY using the hospital
 information provided in the context.
 
 Important rules:
-
 1. Do not invent hospital policies.
 2. If the answer is not available in the context,
    clearly say that the information was not found
@@ -196,18 +163,16 @@ Important rules:
 6. Do not replace a doctor or healthcare professional.
 
 Hospital Knowledge Base:
-
 {context}
 
 User Question:
-
 {question}
 
 Answer:
 """
 
     response = client.chat.completions.create(
-        model="openai/gpt-oss-120b",
+        model="llama-3.3-70b-versatile",
         messages=[
             {
                 "role": "system",
@@ -230,9 +195,7 @@ Answer:
 # --------------------------------------------------
 
 with st.sidebar:
-
     st.title("🏥 Hospital Assistant")
-
     st.subheader("Knowledge Base")
 
     selected_category = st.selectbox(
@@ -240,14 +203,10 @@ with st.sidebar:
         list(CATEGORIES.keys())
     )
 
-    st.info(
-        CATEGORIES[selected_category]
-    )
-
+    st.info(CATEGORIES[selected_category])
     st.divider()
 
     st.subheader("⚙️ Settings")
-
     top_k = st.slider(
         "Number of relevant sections",
         min_value=1,
@@ -256,11 +215,7 @@ with st.sidebar:
     )
 
     st.divider()
-
-    st.caption(
-        "This assistant provides information from "
-        "uploaded hospital documents."
-    )
+    st.caption("This assistant provides information from uploaded hospital documents.")
 
 
 # --------------------------------------------------
@@ -268,7 +223,6 @@ with st.sidebar:
 # --------------------------------------------------
 
 st.title("🏥 Hospital Knowledge Assistant")
-
 st.write(
     "Upload hospital documents and ask questions "
     "about hospital policies, departments, services "
@@ -305,49 +259,30 @@ uploaded_files = st.file_uploader(
 # --------------------------------------------------
 
 if uploaded_files:
-
     all_documents = []
 
     with st.spinner("Reading hospital documents..."):
-
         for uploaded_file in uploaded_files:
-
-            documents = extract_pdf_text(
-                uploaded_file
-            )
-
+            documents = extract_pdf_text(uploaded_file)
             all_documents.extend(documents)
 
     if all_documents:
-
-        chunks = create_chunks(
-            all_documents
-        )
+        chunks = create_chunks(all_documents)
 
         with st.spinner("Creating FAISS knowledge base..."):
+            index = create_faiss_index(chunks)
 
-            index = create_faiss_index(
-                chunks
-            )
-
-        st.success(
-            f"✅ {len(uploaded_files)} document(s) processed successfully."
-        )
-
+        st.success(f"✅ {len(uploaded_files)} document(s) processed successfully.")
         st.info(
             f"📄 Pages processed: {len(all_documents)} | "
             f"🧩 Text chunks: {len(chunks)}"
         )
 
-        # Save in session state
         st.session_state["chunks"] = chunks
         st.session_state["index"] = index
 
     else:
-
-        st.warning(
-            "No readable text was found in the uploaded PDF."
-        )
+        st.warning("No readable text was found in the uploaded PDF.")
 
 
 # --------------------------------------------------
@@ -363,29 +298,14 @@ question = st.text_area(
 
 
 if st.button("🔍 Ask Assistant", type="primary"):
-
     if not api_key:
-
-        st.error(
-            "Please enter your Groq API key."
-        )
-
+        st.error("Please enter your Groq API key.")
     elif "index" not in st.session_state:
-
-        st.warning(
-            "Please upload hospital documents first."
-        )
-
+        st.warning("Please upload hospital documents first.")
     elif not question.strip():
-
-        st.warning(
-            "Please enter a question."
-        )
-
+        st.warning("Please enter a question.")
     else:
-
         with st.spinner("Searching hospital knowledge base..."):
-
             relevant_chunks = search_documents(
                 question,
                 st.session_state["index"],
@@ -394,25 +314,15 @@ if st.button("🔍 Ask Assistant", type="primary"):
             )
 
         context_parts = []
-
         for chunk in relevant_chunks:
-
             context_parts.append(
-                f"""
-File: {chunk['file_name']}
-Page: {chunk['page']}
-
-Content:
-{chunk['text']}
-"""
+                f"File: {chunk['file_name']}\nPage: {chunk['page']}\n\nContent:\n{chunk['text']}\n"
             )
 
         context = "\n".join(context_parts)
 
         with st.spinner("Generating answer..."):
-
             try:
-
                 answer = generate_answer(
                     question,
                     context,
@@ -420,38 +330,19 @@ Content:
                 )
 
                 st.subheader("💡 Answer")
-
                 st.write(answer)
 
-                # ------------------------------------------
-                # Sources
-                # ------------------------------------------
-
                 st.subheader("📚 Sources")
-
                 shown_sources = set()
 
                 for chunk in relevant_chunks:
-
-                    source = (
-                        chunk["file_name"],
-                        chunk["page"]
-                    )
-
+                    source = (chunk["file_name"], chunk["page"])
                     if source not in shown_sources:
-
-                        st.write(
-                            f"📄 **{chunk['file_name']}** "
-                            f"— Page {chunk['page']}"
-                        )
-
+                        st.write(f"📄 **{chunk['file_name']}** — Page {chunk['page']}")
                         shown_sources.add(source)
 
             except Exception as error:
-
-                st.error(
-                    f"Something went wrong: {error}"
-                )
+                st.error(f"Something went wrong: {error}")
 
 
 # --------------------------------------------------
@@ -461,35 +352,5 @@ Content:
 st.divider()
 
 st.caption(
-    "🏥 Hospital Knowledge Assistant | "
-    "RAG + FAISS + Sentence Transformers + Groq"
-)
-
-
-### `requirements.txt`
-
-
-text
-streamlit
-groq
-faiss-cpu
-sentence-transformers
-PyMuPDF
-numpy
-
-
-### یہ app کیا کرے گی؟
-
-**Flow:**
-
-# Hospital PDF → Text Extraction → Chunks → Embeddings → FAISS → Question → Relevant Information → Groq → Answer + Source/Page
-مثلاً آپ **Patient Safety.pdf** upload کریں اور پوچھیں:
-
-> `What are the patient identification procedures?`
-
-st.divider()
-
-st.caption(
-    "🏥 Hospital Knowledge Assistant | "
-    "RAG + FAISS + Sentence Transformers + Groq"
+    "🏥 Hospital Knowledge Assistant | RAG + FAISS + Sentence Transformers + Groq"
 )
