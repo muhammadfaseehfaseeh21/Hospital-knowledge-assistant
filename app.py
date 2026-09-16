@@ -464,7 +464,7 @@ st.caption(
     "🏥 Hospital Knowledge Assistant | "
     "RAG + FAISS + Sentence Transformers + Groq"
 )
-```
+
 
 ### `requirements.txt`
 
@@ -476,7 +476,7 @@ faiss-cpu
 sentence-transformers
 PyMuPDF
 numpy
-```
+
 
 ### یہ app کیا کرے گی؟
 
