@@ -487,6 +487,9 @@ numpy
 
 > `What are the patient identification procedures?`
 
-App پہلے FAISS میں relevant information تلاش کرے گی، پھر Groq سے answer بنائے گی اور آخر میں **PDF کا نام + page number** بھی دکھائے گی۔
+st.divider()
 
-**اہم:** یہ version PDF files کے لیے ہے۔ Medical diagnosis یا treatment دینے کے بجائے اسے hospital کی اپنی policies/information تک محدود رکھا گیا ہے۔
+st.caption(
+    "🏥 Hospital Knowledge Assistant | "
+    "RAG + FAISS + Sentence Transformers + Groq"
+)
