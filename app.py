@@ -482,8 +482,7 @@ numpy
 
 **Flow:**
 
-`Hospital PDF → Text Extraction → Chunks → Embeddings → FAISS → Question → Relevant Information → Groq → Answer + Source/Page`
-
+# Hospital PDF → Text Extraction → Chunks → Embeddings → FAISS → Question → Relevant Information → Groq → Answer + Source/Page
 مثلاً آپ **Patient Safety.pdf** upload کریں اور پوچھیں:
 
 > `What are the patient identification procedures?`
