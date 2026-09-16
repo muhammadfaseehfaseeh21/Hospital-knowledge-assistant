@@ -468,7 +468,7 @@ st.caption(
 
 ### `requirements.txt`
 
-:::writing{variant="standard" id="74106" title="requirements.txt"}
+
 text
 streamlit
 groq
